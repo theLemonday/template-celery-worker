@@ -1,0 +1,42 @@
+---
+services:
+  # ==========================================
+  # The Broker & Backend (The Bouncer)
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    # 1. Set the password using the command line flag
+    command: redis-server --requirepass "secret_password_123"
+    ports: [6379:6379]
+    healthcheck:
+      # We must provide the password to the healthcheck too, or it will fail!
+      test: [CMD, redis-cli, -a, secret_password_123, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ==========================================
+  # The Worker (The Patron)
+  # ==========================================
+  prod:
+    build:
+      context: ..
+      dockerfile: deployments/Dockerfile
+      target: prod
+    # Wait for Redis to be "Healthy" (responding to ping) before starting
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      # 2. Pass the configuration to Pydantic
+      # Remember our model: class RedisConfig(BaseModel): ... password: str
+      # Broker Config
+      APP_CELERY_BROKER__HOST: redis
+      APP_CELERY_BROKER__PORT: 6379
+      APP_CELERY_BROKER__PASSWORD: secret_password_123
+
+      # Backend Config (Reusing the same redis instance for this example)
+      APP_CELERY_BACKEND__HOST: redis
+      APP_CELERY_BACKEND__PORT: 6379
+      APP_CELERY_BACKEND__PASSWORD: secret_password_123
+      APP_CELERY_BACKEND__DB: 10
