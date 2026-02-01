@@ -9,13 +9,15 @@ ENV UV_COMPILE_BYTECODE=1 \
 
 WORKDIR /app
 
-COPY pyproject.toml uv.lock ./
-RUN uv export --frozen --no-dev --no-emit-project --format=requirements-txt >requirements.txt
+RUN --mount=type=cache,target=/root/.cache/uv --mount=type=bind,source=uv.lock,target=uv.lock --mount=type=bind,source=pyproject.toml,target=pyproject.toml uv export --frozen --no-dev --no-emit-project \
+    --format=requirements-txt > \
+    requirements.txt
 
 # 3. Install dependencies
 # We install these into /app/site-packages.
 # Docker will CACHE this layer as long as uv.lock doesn't change.
-RUN uv pip install \
+RUN --mount=type=cache,target=/root/.cache/uv uv pip install \
+    --system \
     --target /app/site-packages \
     -r requirements.txt
 
@@ -32,22 +34,27 @@ RUN uv build
 # This takes the code from 'src/', packages it, and installs it to site-packages
 RUN uv pip install \
     --system \
-    --no-deps \
-    --target /app/site-packages \
+    --target \
+    /app/site-packages \
     dist/*.whl
+
+# 2. OPTIMIZATION: Compile Bytecode NOW
+# Since nonroot can't write to __pycache__ at runtime, we do it here.
+# This ensures fast startup.
+RUN python3 -m compileall /app/site-packages
+
+# 3. SECURITY: Ensure World-Readability
+# Sometimes install tools create files only readable by owner (root).
+# We ensure everyone (including nonroot) can read the libraries.
+RUN chmod -R a+r /app/site-packages
 
 # ==========================================
 # Stage 2: The Runner (Distroless)
 # ==========================================
 FROM gcr.io/distroless/python3-debian12 AS prod
 
-WORKDIR /app
-
 # 1. Copy the combined "site-packages" (Dependencies + Your App)
-COPY --from=builder /app/site-packages /app/site-packages
-
-# 2. Configure PYTHONPATH
-ENV PYTHONPATH="/app/site-packages"
+COPY --from=builder /app/site-packages /usr/lib/python3/dist-packages
 
 USER nonroot:nonroot
 

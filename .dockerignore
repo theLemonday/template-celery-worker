@@ -1,0 +1,73 @@
+ # --- Version Control ---
+.git
+.gitignore
+
+# --- Python / uv / Project Managers ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.python-version
+.uv/
+
+# --- Build & Distribution ---
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- Testing & Coverage ---
+.target/
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+htmlcov/
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# --- Environment & Secrets ---
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.swp
+*.swo
+
+# --- IDEs & Editors ---
+.vscode/
+.idea/
+.project
+.pydevproject
+.settings/
+# Neovim swap/undo files
+*.un~
+Session.vim
+
+# --- System & OS ---
+.DS_Store
+Thumbs.db
+
+# --- Nix / Home Manager ---
+.direnv/
+result
